@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: docrot-check (image + idl, warn)
-        uses: auroraxo/docrot-check@ff33d43
+        uses: auroraxo/docrot-check@ff33d4379734fdfc15d93827047d9e7a1ca38dce
         with:
           root: .
           fail-on-broken: "false"
