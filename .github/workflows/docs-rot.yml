@@ -1,0 +1,46 @@
+name: docs-rot + idl-freshness
+
+# Second-repo adoption of auroraxo/docrot-check (warn mode for both checks).
+# The image-refresh and IDL-freshness legs both run on every push to master and
+# once a week; rot reports are uploaded as artifacts, job summaries link the
+# broken references. Fail-on-rot stays off until this repo has a clean week.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1"   # Mon 05:17Z — one day before the docrot weekly window
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docrot-check (image + idl, warn)
+        uses: auroraxo/docrot-check@ff33d43
+        with:
+          root: .
+          fail-on-broken: "false"
+          check-idl-freshness: "true"
+          idl-cluster: "mainnet"
+          idl-fail-on-rot: "false"
+          idl-report-path: idl-freshness-report.json
+          report-path: docrot-report.json
+          upload-report: "true"
+      - name: Headline rot totals
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ -f docrot-report.json ]; then
+            echo "## image rot"
+            python3 -c 'import json; d=json.load(open("docrot-report.json")); print(json.dumps(d.get("summary", d), indent=2))'
+          fi
+          if [ -f idl-freshness-report.json ]; then
+            echo "## idl rot"
+            python3 -c 'import json; d=json.load(open("idl-freshness-report.json")); print(json.dumps({k:d.get(k) for k in ("cluster","rotTotal","unresolvableTotal","scanned")}, indent=2))'
+          fi
